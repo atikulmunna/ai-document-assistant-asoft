@@ -89,8 +89,8 @@ def query(request: QueryRequest) -> QueryResponse:
     try:
         response = service.answer(question)
     except GeminiError as exc:
-        logger.error("Gemini call failed after %.0fms | q=%r",
-                     (time.perf_counter() - start) * 1000, _truncate(question))
+        logger.error("LLM call failed after %.0fms | q=%r | %s",
+                     (time.perf_counter() - start) * 1000, _truncate(question), exc)
         raise HTTPException(status_code=502,
                             detail="The AI service is temporarily unavailable. Please try again.")
 

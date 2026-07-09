@@ -16,6 +16,8 @@ def _settings(min_similarity: float = 0.55, top_k: int = 3) -> Settings:
         gemini_api_key="test",
         generation_model="test-gen",
         embedding_model="test-embed",
+        groq_api_key="",
+        groq_model="test-groq",
         retrieval_top_k=top_k,
         min_similarity=min_similarity,
         max_question_length=1000,

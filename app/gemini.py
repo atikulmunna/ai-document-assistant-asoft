@@ -5,20 +5,28 @@ rest of the app a single, small surface to depend on.
 """
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 from google import genai
 from google.genai import types
 
 from app.config import settings
 
+logger = logging.getLogger("agamisoft")
+
+# Groq's OpenAI-compatible endpoint (used only as a generation fallback).
+_GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+
 # Batching keeps build-time embedding requests within provider limits.
 _EMBED_BATCH_SIZE = 100
 
 _client: genai.Client | None = None
+_groq_client = None  # lazily created openai.OpenAI pointed at Groq
 
 
 class GeminiError(RuntimeError):
-    """Raised when a Gemini API call fails or returns nothing usable."""
+    """Raised when a generation or embedding call fails or returns nothing usable."""
 
 
 def _get_client() -> genai.Client:
@@ -82,31 +90,78 @@ _SYSTEM_INSTRUCTION = (
 )
 
 
-def generate_answer(question: str, context_blocks: list[str]) -> str:
-    """Generate a grounded answer from the retrieved context passages."""
+def _build_prompt(question: str, context_blocks: list[str]) -> str:
     context = "\n\n".join(context_blocks)
-    prompt = (
+    return (
         f"Context passages:\n{context}\n\n"
         f"Question: {question}\n\n"
         "Answer using only the context above."
     )
-    try:
-        response = _get_client().models.generate_content(
-            model=settings.generation_model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=_SYSTEM_INSTRUCTION,
-                temperature=0.1,
-                max_output_tokens=800,
-                # Grounded lookup needs no extended reasoning; disabling thinking
-                # keeps answers fast (about 1s vs 30s+ with thinking on).
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            ),
-        )
-    except Exception as exc:  # network / auth / quota errors
-        raise GeminiError(f"Generation request failed: {exc}") from exc
 
-    answer = (response.text or "").strip()
+
+def _generate_gemini(prompt: str) -> str:
+    response = _get_client().models.generate_content(
+        model=settings.generation_model,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=_SYSTEM_INSTRUCTION,
+            temperature=0.1,
+            max_output_tokens=800,
+            # Grounded lookup needs no extended reasoning; disabling thinking
+            # keeps answers fast (about 1s vs 30s+ with thinking on).
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        ),
+    )
+    return (response.text or "").strip()
+
+
+def _get_groq_client():
+    """Lazily create the Groq client (OpenAI-compatible) for fallback generation."""
+    global _groq_client
+    if _groq_client is None:
+        from openai import OpenAI  # imported here so the dep is only needed for fallback
+
+        _groq_client = OpenAI(api_key=settings.groq_api_key, base_url=_GROQ_BASE_URL)
+    return _groq_client
+
+
+def _generate_groq(prompt: str) -> str:
+    response = _get_groq_client().chat.completions.create(
+        model=settings.groq_model,
+        messages=[
+            {"role": "system", "content": _SYSTEM_INSTRUCTION},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.1,
+        max_tokens=800,
+    )
+    return (response.choices[0].message.content or "").strip()
+
+
+def generate_answer(question: str, context_blocks: list[str]) -> str:
+    """Generate a grounded answer, using Gemini first and Groq as a fallback.
+
+    Gemini's free tier rate-limits generation, so when it fails (commonly a 429)
+    we retry once with Groq. Embeddings and retrieval are unchanged; only the
+    final answer is produced by the fallback provider.
+    """
+    prompt = _build_prompt(question, context_blocks)
+
+    try:
+        answer = _generate_gemini(prompt)
+        if answer:
+            return answer
+        raise RuntimeError("empty response")
+    except Exception as gemini_exc:
+        if not settings.groq_api_key:
+            raise GeminiError(f"Gemini generation failed and no fallback is configured: {gemini_exc}")
+        logger.warning("Gemini generation failed (%s); falling back to Groq.", gemini_exc)
+
+    try:
+        answer = _generate_groq(prompt)
+    except Exception as groq_exc:
+        raise GeminiError(f"All generation providers failed. Groq: {groq_exc}")
     if not answer:
-        raise GeminiError("Generation returned an empty response.")
+        raise GeminiError("Groq generation returned an empty response.")
+    logger.info("Answer served by Groq fallback (%s).", settings.groq_model)
     return answer

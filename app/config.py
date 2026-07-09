@@ -37,6 +37,9 @@ class Settings:
     gemini_api_key: str
     generation_model: str
     embedding_model: str
+    # Optional Groq fallback for generation when Gemini is rate-limited or fails.
+    groq_api_key: str
+    groq_model: str
     retrieval_top_k: int
     # Chunks below this similarity are treated as irrelevant, which drives the
     # "insufficient information" (no-hallucination) behaviour.
@@ -50,6 +53,8 @@ def load_settings() -> Settings:
         gemini_api_key=os.getenv("GEMINI_API_KEY", "").strip(),
         generation_model=os.getenv("GEMINI_GENERATION_MODEL", "gemini-2.5-flash").strip(),
         embedding_model=os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001").strip(),
+        groq_api_key=os.getenv("GROQ_API_KEY", "").strip(),
+        groq_model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip(),
         retrieval_top_k=_int_env("RETRIEVAL_TOP_K", 5),
         min_similarity=float(os.getenv("RETRIEVAL_MIN_SIMILARITY", "0.55")),
         max_question_length=_int_env("MAX_QUESTION_LENGTH", 1000),
