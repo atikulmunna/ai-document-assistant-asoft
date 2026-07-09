@@ -16,7 +16,7 @@ COPY static ./static
 COPY data ./data
 COPY sample_docs ./sample_docs
 
-# Cloud Run injects PORT; default to 8080 for local runs.
+# The container listens on PORT (default 8080); the host can override it.
 ENV PORT=8080
 EXPOSE 8080
 

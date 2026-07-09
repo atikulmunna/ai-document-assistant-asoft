@@ -1,13 +1,3 @@
----
-title: AgamiSoft AI Document Assistant
-emoji: 📄
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-app_port: 8080
-pinned: false
----
-
 # AgamiSoft AI Document Assistant
 
 An internal question-answering assistant for AgamiSoft Ltd. Employees ask
@@ -323,25 +313,31 @@ runs with just an API key set. The defaults are shown.
 
 ---
 
-## 9. Deployment (Google Cloud Run)
+## 9. Deployment (AWS App Runner)
 
 The index is committed to the repository and copied into the container image at
 build time, so deploying is just a container build and deploy. The Gemini key is
-supplied at run time as an environment variable (ideally via Secret Manager) and
-is never baked into the image or committed.
+supplied at run time as an environment variable and is never baked into the image
+or committed.
+
+The app is a standard container, so it runs on any container host. It is deployed
+on AWS App Runner from an image in Amazon ECR:
 
 ```bash
-gcloud run deploy agamisoft-assistant \
-  --source . \
-  --region asia-south1 \
-  --allow-unauthenticated \
-  --set-env-vars GEMINI_API_KEY=your-key
+# 1. Build and push the image to ECR (region and account id are your own)
+aws ecr create-repository --repository-name ai-document-assistant-asoft
+docker build -t ai-document-assistant-asoft .
+docker tag ai-document-assistant-asoft:latest <acct>.dkr.ecr.<region>.amazonaws.com/ai-document-assistant-asoft:latest
+docker push <acct>.dkr.ecr.<region>.amazonaws.com/ai-document-assistant-asoft:latest
+
+# 2. Create the App Runner service from that image, listening on port 8080,
+#    with GEMINI_API_KEY set as a runtime environment variable.
 ```
 
-Cloud Run tells the container which port to listen on through a `PORT`
-environment variable, which the container's start command already respects. The
-same container runs locally with `docker build -t assistant . && docker run -p
-8080:8080 -e GEMINI_API_KEY=your-key assistant`.
+The container listens on the port given by the `PORT` environment variable
+(default 8080), which App Runner sets to its configured port. The same image runs
+locally with `docker build -t assistant . && docker run -p 8080:8080 -e
+GEMINI_API_KEY=your-key assistant`.
 
 ---
 
