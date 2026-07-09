@@ -158,7 +158,7 @@ index) never blur into one another.
 | `config.py` | Reads all settings from the environment once and exposes them as a single, read-only `settings` object. Nothing else in the code reads environment variables directly. |
 | `schemas.py` | Defines the request and response shapes with Pydantic. This is the API contract: a `QueryRequest` in, a `QueryResponse` (answer, citations, grounded flag) out. |
 | `ingest.py` | Turns PDFs into clean, page-tagged chunks. Handles whitespace tidy-up, paragraph-aware splitting, and the rare oversized paragraph. |
-| `gemini.py` | The only place that talks to Google Gemini. Exposes two functions, `embed_texts`/`embed_query` for vectors and `generate_answer` for the grounded reply, and raises a single custom `GeminiError` on any failure. Keeping the provider behind one small module means it could be swapped without touching the rest of the app. |
+| `gemini.py` | The single place that talks to the LLM providers. Exposes `embed_texts`/`embed_query` for vectors (Gemini) and `generate_answer` for the grounded reply (Gemini, falling back to Groq on failure), and raises one custom `GeminiError` when all providers fail. Keeping providers behind one small module means they can be swapped without touching the rest of the app. |
 | `vectorstore.py` | The searchable index. Builds and loads the vectors, and runs the cosine similarity search that finds the closest chunks to a question. |
 | `rag.py` | The conductor. It embeds the question, retrieves chunks, applies the similarity gate, calls the model when appropriate, and assembles the final answer with citations. |
 | `main.py` | The FastAPI web layer. Loads the index at start-up, serves the `/query` and `/health` endpoints and the web page, and translates internal errors into clear HTTP responses. |
@@ -184,6 +184,15 @@ behind them.
   halves of RAG keeps the system simple and the setup to a single API key. Gemini
   also offers strong retrieval embeddings and a capable, fast generation model on
   a generous free tier.
+
+- **Groq as a generation fallback.** Gemini's free tier rate-limits generation to
+  only a couple of requests per minute, so a short burst of questions can return a
+  429. When Gemini generation fails, the app automatically retries the answer with
+  Groq (Llama 3.3 70B), whose free tier is far more generous and fast. Embeddings
+  and retrieval stay on Gemini; only the final answer switches provider. The
+  fallback is optional: set `GROQ_API_KEY` to enable it, leave it unset to run
+  Gemini-only. This graceful degradation keeps the assistant responsive under the
+  free-tier limits without adding operational weight.
 
 - **`gemini-2.5-flash` with reasoning turned off, not a newer "thinking" model.**
   Newer models spend time on internal reasoning before answering, which on the
