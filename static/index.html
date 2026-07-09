@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgamiSoft Document Assistant</title>
+  <style>
+    :root { color-scheme: light dark; --accent: #2563eb; --border: #d4d4d8; --muted: #6b7280; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+           max-width: 760px; margin: 0 auto; padding: 2rem 1rem; line-height: 1.5; }
+    h1 { font-size: 1.5rem; margin-bottom: .25rem; }
+    p.sub { color: var(--muted); margin-top: 0; }
+    form { display: flex; gap: .5rem; margin: 1.5rem 0; }
+    input { flex: 1; padding: .7rem .8rem; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 1rem; background: transparent; color: inherit; }
+    button { padding: .7rem 1.2rem; border: 0; border-radius: 8px; background: var(--accent);
+             color: #fff; font-size: 1rem; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: default; }
+    #answer { white-space: pre-wrap; padding: 1rem; border: 1px solid var(--border);
+              border-radius: 8px; min-height: 2rem; }
+    .hidden { display: none; }
+    .citations { margin-top: 1rem; }
+    .citation { border-left: 3px solid var(--accent); padding: .5rem .8rem; margin: .5rem 0;
+                background: rgba(37, 99, 235, .06); border-radius: 0 6px 6px 0; }
+    .citation .meta { font-weight: 600; font-size: .9rem; }
+    .citation .snippet { color: var(--muted); font-size: .88rem; margin-top: .25rem; }
+    .error { color: #b91c1c; }
+    .examples { font-size: .88rem; color: var(--muted); }
+    .examples button { background: none; color: var(--accent); border: 0; padding: 0 .3rem;
+                       cursor: pointer; font-size: .88rem; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>AgamiSoft Document Assistant</h1>
+  <p class="sub">Ask about HR, leave, sales, and company policies. Answers are grounded in the source documents with citations.</p>
+
+  <form id="ask-form">
+    <input id="question" name="question" type="text" autocomplete="off"
+           placeholder="e.g. How many days of annual leave do I get?" required />
+    <button id="submit" type="submit">Ask</button>
+  </form>
+
+  <p class="examples">Try:
+    <button type="button" class="ex">What are the standard working hours?</button>
+    <button type="button" class="ex">What discount can an Account Executive approve alone?</button>
+    <button type="button" class="ex">How much notice must I give to resign?</button>
+  </p>
+
+  <div id="result" class="hidden">
+    <div id="answer"></div>
+    <div id="citations" class="citations"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("ask-form");
+    const input = document.getElementById("question");
+    const submit = document.getElementById("submit");
+    const result = document.getElementById("result");
+    const answerEl = document.getElementById("answer");
+    const citationsEl = document.getElementById("citations");
+
+    document.querySelectorAll(".ex").forEach(function (b) {
+      b.addEventListener("click", function () { input.value = b.textContent; input.focus(); });
+    });
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const question = input.value.trim();
+      if (!question) return;
+
+      submit.disabled = true;
+      submit.textContent = "Thinking...";
+      result.classList.remove("hidden");
+      answerEl.className = "";
+      answerEl.textContent = "";
+      citationsEl.innerHTML = "";
+
+      try {
+        const res = await fetch("/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: question }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          answerEl.className = "error";
+          answerEl.textContent = data.detail || "Something went wrong.";
+          return;
+        }
+        answerEl.textContent = data.answer;
+        (data.citations || []).forEach(function (c) {
+          const div = document.createElement("div");
+          div.className = "citation";
+          div.innerHTML =
+            '<div class="meta">' + c.document + " &middot; page " + c.page +
+            " &middot; score " + c.score.toFixed(2) + "</div>" +
+            '<div class="snippet"></div>';
+          div.querySelector(".snippet").textContent = c.snippet;
+          citationsEl.appendChild(div);
+        });
+      } catch (err) {
+        answerEl.className = "error";
+        answerEl.textContent = "Network error. Please try again.";
+      } finally {
+        submit.disabled = false;
+        submit.textContent = "Ask";
+      }
+    });
+  </script>
+</body>
+</html>
