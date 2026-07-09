@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -18,7 +19,16 @@ from app.vectorstore import load as load_store
 logger = logging.getLogger("agamisoft")
 logging.basicConfig(level=logging.INFO)
 
+# Quiet noisy third-party loggers so our own request logs stand out.
+for _noisy in ("httpx", "httpcore", "google_genai"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
+
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+
+
+def _truncate(text: str, limit: int = 80) -> str:
+    """Shorten a question for logging so we never dump huge inputs."""
+    return text if len(text) <= limit else text[:limit] + "..."
 
 # Holds the single RagService instance once the index is loaded.
 _state: dict[str, RagService] = {}
@@ -75,12 +85,21 @@ def query(request: QueryRequest) -> QueryResponse:
                             detail=f"Question exceeds {settings.max_question_length} characters.")
 
     service = _require_service()
+    start = time.perf_counter()
     try:
-        return service.answer(question)
+        response = service.answer(question)
     except GeminiError as exc:
-        logger.error("Gemini call failed: %s", exc)
+        logger.error("Gemini call failed after %.0fms | q=%r",
+                     (time.perf_counter() - start) * 1000, _truncate(question))
         raise HTTPException(status_code=502,
                             detail="The AI service is temporarily unavailable. Please try again.")
+
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    top_score = f"{response.citations[0].score:.3f}" if response.citations else "n/a"
+    logger.info("query answered | grounded=%s | citations=%d | top_score=%s | %.0fms | q=%r",
+                response.grounded, len(response.citations), top_score, elapsed_ms,
+                _truncate(question))
+    return response
 
 
 @app.get("/")
