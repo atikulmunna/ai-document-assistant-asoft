@@ -1,6 +1,6 @@
 # AgamiSoft AI Document Assistant
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_App-2563eb?style=for-the-badge&logo=amazonaws&logoColor=white)](https://udt934xmby.us-east-1.awsapprunner.com)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_App-f48022?style=for-the-badge&logo=amazonaws&logoColor=white)](https://udt934xmby.us-east-1.awsapprunner.com)
 
 **Live app:** https://udt934xmby.us-east-1.awsapprunner.com
 
