@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ai-document-assistant-asoft
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      # Value is entered in the Render dashboard, never committed.
+      - key: GEMINI_API_KEY
+        sync: false
