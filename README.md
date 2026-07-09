@@ -332,9 +332,10 @@ The app is deployed live on AWS App Runner:
 **https://udt934xmby.us-east-1.awsapprunner.com**
 
 The index is committed to the repository and copied into the container image at
-build time, so deploying is just a container build and deploy. The Gemini key is
-supplied at run time as an environment variable and is never baked into the image
-or committed.
+build time, so deploying is just a container build and deploy. The API keys live
+in AWS Secrets Manager and are injected into the container at run time through a
+scoped instance role, so they are never baked into the image, stored in the
+service configuration, or committed to the repository.
 
 The app is a standard container, so it runs on any container host. It is deployed
 on App Runner from an image in Amazon ECR:
@@ -350,10 +351,15 @@ aws ecr get-login-password --region <region> | docker login --username AWS --pas
 docker buildx build --platform linux/amd64 --provenance=false --sbom=false \
   -t $REG/ai-document-assistant-asoft:latest --push .
 
-# 2. Create the App Runner service from that image, listening on port 8080,
-#    with GEMINI_API_KEY set as a runtime environment variable. A later
-#    'aws apprunner start-deployment' rolls out a freshly pushed image.
+# 2. Create the App Runner service from that image, listening on port 8080.
+#    GEMINI_API_KEY and GROQ_API_KEY are supplied as RuntimeEnvironmentSecrets
+#    that reference AWS Secrets Manager, read via a scoped instance role.
+#    A later 'aws apprunner start-deployment' rolls out a freshly pushed image.
 ```
+
+> Secrets note: the keys are stored in AWS Secrets Manager and referenced by ARN,
+> so `describe-service` never exposes their values. The instance role grants
+> `secretsmanager:GetSecretValue` on only those two secrets.
 
 The container listens on the port given by the `PORT` environment variable
 (default 8080), which App Runner sets to its configured port. The same image runs
