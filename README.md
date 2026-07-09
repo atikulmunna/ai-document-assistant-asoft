@@ -1,5 +1,9 @@
 # AgamiSoft AI Document Assistant
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_App-2563eb?style=for-the-badge&logo=amazonaws&logoColor=white)](https://udt934xmby.us-east-1.awsapprunner.com)
+
+**Live app:** https://udt934xmby.us-east-1.awsapprunner.com
+
 An internal question-answering assistant for AgamiSoft Ltd. Employees ask
 everyday questions in plain English ("How many days of annual leave do I get?",
 "What discount can I approve on my own?") and get a short, accurate answer that
@@ -315,29 +319,52 @@ runs with just an API key set. The defaults are shown.
 
 ## 9. Deployment (AWS App Runner)
 
+The app is deployed live on AWS App Runner:
+**https://udt934xmby.us-east-1.awsapprunner.com**
+
 The index is committed to the repository and copied into the container image at
 build time, so deploying is just a container build and deploy. The Gemini key is
 supplied at run time as an environment variable and is never baked into the image
 or committed.
 
 The app is a standard container, so it runs on any container host. It is deployed
-on AWS App Runner from an image in Amazon ECR:
+on App Runner from an image in Amazon ECR:
 
 ```bash
-# 1. Build and push the image to ECR (region and account id are your own)
+# 1. Build and push the image to ECR (use your own account id and region).
+#    --provenance=false --sbom=false produces a single-arch image manifest;
+#    App Runner cannot run the multi-manifest attestation images that modern
+#    BuildKit creates by default.
 aws ecr create-repository --repository-name ai-document-assistant-asoft
-docker build -t ai-document-assistant-asoft .
-docker tag ai-document-assistant-asoft:latest <acct>.dkr.ecr.<region>.amazonaws.com/ai-document-assistant-asoft:latest
-docker push <acct>.dkr.ecr.<region>.amazonaws.com/ai-document-assistant-asoft:latest
+REG=<acct>.dkr.ecr.<region>.amazonaws.com
+aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin $REG
+docker buildx build --platform linux/amd64 --provenance=false --sbom=false \
+  -t $REG/ai-document-assistant-asoft:latest --push .
 
 # 2. Create the App Runner service from that image, listening on port 8080,
-#    with GEMINI_API_KEY set as a runtime environment variable.
+#    with GEMINI_API_KEY set as a runtime environment variable. A later
+#    'aws apprunner start-deployment' rolls out a freshly pushed image.
 ```
 
 The container listens on the port given by the `PORT` environment variable
 (default 8080), which App Runner sets to its configured port. The same image runs
-locally with `docker build -t assistant . && docker run -p 8080:8080 -e
-GEMINI_API_KEY=your-key assistant`.
+locally with `docker run -p 8080:8080 -e GEMINI_API_KEY=your-key ai-document-assistant-asoft`.
+
+### Observability
+
+App Runner streams the container's output to two Amazon CloudWatch log groups:
+a `service` group for deployment and system events, and an `application` group
+for runtime logs. Each answered request emits one structured line, for example:
+
+```
+query answered | grounded=True  | citations=5 | top_score=0.760 | 730ms | q='What discount can an Account Executive approve alone?'
+query answered | grounded=False | citations=0 | top_score=n/a   | 155ms | q='Who won the world cup in 1998?'
+```
+
+That single line captures whether the answer was grounded or an honest refusal,
+how many passages supported it, the top retrieval score, the latency, and the
+(truncated) question. Refusals are visibly faster because they skip the language
+model entirely, which the latency figures make plain.
 
 ---
 
