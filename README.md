@@ -1,3 +1,13 @@
+---
+title: AgamiSoft AI Document Assistant
+emoji: 📄
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 8080
+pinned: false
+---
+
 # AgamiSoft AI Document Assistant
 
 An internal question-answering assistant for AgamiSoft Ltd. Employees ask
