@@ -6,6 +6,7 @@ rest of the app a single, small surface to depend on.
 from __future__ import annotations
 
 import logging
+import time
 
 import numpy as np
 from google import genai
@@ -20,6 +21,11 @@ _GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 
 # Batching keeps build-time embedding requests within provider limits.
 _EMBED_BATCH_SIZE = 100
+
+# The Groq fallback is retried a couple of times so a single transient blip
+# (rate limit, brief network error) does not surface as an outage to the user.
+_GROQ_MAX_ATTEMPTS = 2
+_GROQ_RETRY_DELAY_SECONDS = 1.0
 
 _client: genai.Client | None = None
 _groq_client = None  # lazily created openai.OpenAI pointed at Groq
@@ -138,12 +144,34 @@ def _generate_groq(prompt: str) -> str:
     return (response.choices[0].message.content or "").strip()
 
 
+def _generate_groq_with_retry(prompt: str) -> str:
+    """Call Groq, retrying transient failures with a short backoff.
+
+    Raises GeminiError if every attempt fails or returns an empty answer.
+    """
+    last_error: Exception | None = None
+    for attempt in range(1, _GROQ_MAX_ATTEMPTS + 1):
+        try:
+            answer = _generate_groq(prompt)
+            if answer:
+                return answer
+            last_error = RuntimeError("empty response")
+        except Exception as exc:
+            last_error = exc
+        if attempt < _GROQ_MAX_ATTEMPTS:
+            logger.warning("Groq attempt %d/%d failed (%s); retrying in %.1fs.",
+                           attempt, _GROQ_MAX_ATTEMPTS, last_error, _GROQ_RETRY_DELAY_SECONDS)
+            time.sleep(_GROQ_RETRY_DELAY_SECONDS)
+    raise GeminiError(f"All generation providers failed. Groq: {last_error}")
+
+
 def generate_answer(question: str, context_blocks: list[str]) -> str:
     """Generate a grounded answer, using Gemini first and Groq as a fallback.
 
     Gemini's free tier rate-limits generation, so when it fails (commonly a 429)
-    we retry once with Groq. Embeddings and retrieval are unchanged; only the
-    final answer is produced by the fallback provider.
+    we fall back to Groq, retrying it a couple of times so a single transient
+    blip does not surface as an outage. Embeddings and retrieval are unchanged;
+    only the final answer is produced by the fallback provider.
     """
     prompt = _build_prompt(question, context_blocks)
 
@@ -157,11 +185,6 @@ def generate_answer(question: str, context_blocks: list[str]) -> str:
             raise GeminiError(f"Gemini generation failed and no fallback is configured: {gemini_exc}")
         logger.warning("Gemini generation failed (%s); falling back to Groq.", gemini_exc)
 
-    try:
-        answer = _generate_groq(prompt)
-    except Exception as groq_exc:
-        raise GeminiError(f"All generation providers failed. Groq: {groq_exc}")
-    if not answer:
-        raise GeminiError("Groq generation returned an empty response.")
+    answer = _generate_groq_with_retry(prompt)
     logger.info("Answer served by Groq fallback (%s).", settings.groq_model)
     return answer

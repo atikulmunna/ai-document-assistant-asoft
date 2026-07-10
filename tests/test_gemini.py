@@ -61,3 +61,40 @@ def test_empty_gemini_response_triggers_fallback(monkeypatch):
     monkeypatch.setattr(gemini, "settings", _fake_settings("groq-key"))
 
     assert gemini.generate_answer("q", ["ctx"]) == "Groq answer."
+
+
+def test_groq_retries_after_transient_failure(monkeypatch):
+    monkeypatch.setattr(gemini, "_generate_gemini", lambda p: (_ for _ in ()).throw(RuntimeError("429")))
+    monkeypatch.setattr(gemini, "settings", _fake_settings("groq-key"))
+    monkeypatch.setattr(gemini.time, "sleep", lambda s: None)  # no real delay in tests
+
+    attempts = {"n": 0}
+
+    def flaky_groq(prompt):
+        attempts["n"] += 1
+        if attempts["n"] == 1:
+            raise RuntimeError("temporary rate limit")
+        return "Groq answer."
+
+    monkeypatch.setattr(gemini, "_generate_groq", flaky_groq)
+
+    assert gemini.generate_answer("q", ["ctx"]) == "Groq answer."
+    assert attempts["n"] == 2  # first attempt failed, second succeeded
+
+
+def test_groq_gives_up_after_max_attempts(monkeypatch):
+    monkeypatch.setattr(gemini, "_generate_gemini", lambda p: (_ for _ in ()).throw(RuntimeError("429")))
+    monkeypatch.setattr(gemini, "settings", _fake_settings("groq-key"))
+    monkeypatch.setattr(gemini.time, "sleep", lambda s: None)
+
+    attempts = {"n": 0}
+
+    def always_fails(prompt):
+        attempts["n"] += 1
+        raise RuntimeError("still down")
+
+    monkeypatch.setattr(gemini, "_generate_groq", always_fails)
+
+    with pytest.raises(gemini.GeminiError):
+        gemini.generate_answer("q", ["ctx"])
+    assert attempts["n"] == gemini._GROQ_MAX_ATTEMPTS
