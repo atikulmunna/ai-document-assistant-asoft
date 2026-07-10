@@ -9,60 +9,234 @@
       color-scheme: light;
       --accent: #f48022;
       --accent-hover: #d96d15;
+      --accent-soft: #fff4ec;
       --accent-weak: rgba(244, 128, 34, .10);
-      --border: #e4e4e7;
-      --muted: #6b7280;
-      --bg: #ffffff;
-      --fg: #1a1a1a;
+      --accent-ring: rgba(244, 128, 34, .28);
+      --border: #e7e5e4;
+      --border-strong: #d6d3d1;
+      --muted: #78716c;
+      --muted-strong: #57534e;
+      --bg: #f6f5f4;
+      --panel: #ffffff;
+      --fg: #1c1917;
+      --shadow: 0 1px 2px rgba(28, 25, 23, .04), 0 8px 24px rgba(28, 25, 23, .06);
+      --shadow-sm: 0 1px 2px rgba(28, 25, 23, .05);
+      --radius: 14px;
     }
     * { box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-           max-width: 760px; margin: 0 auto; padding: 2rem 1rem; line-height: 1.5;
-           background: var(--bg); color: var(--fg); }
-    h1 { font-size: 1.5rem; margin-bottom: .25rem; }
-    p.sub { color: var(--muted); margin-top: 0; }
-    form { display: flex; gap: .5rem; margin: 1.5rem 0; }
-    input { flex: 1; padding: .7rem .8rem; border: 1px solid var(--border);
-            border-radius: 8px; font-size: 1rem; background: #fff; color: var(--fg); }
-    input:focus { outline: none; border-color: var(--accent);
-                  box-shadow: 0 0 0 3px var(--accent-weak); }
-    button { padding: .7rem 1.2rem; border: 0; border-radius: 8px; background: var(--accent);
-             color: #fff; font-size: 1rem; cursor: pointer; }
-    button:hover:not(:disabled) { background: var(--accent-hover); }
-    button:disabled { opacity: .6; cursor: default; }
-    #answer { white-space: pre-wrap; padding: 1rem; border: 1px solid var(--border);
-              border-radius: 8px; min-height: 2rem; background: #fff; }
+    html, body { height: 100%; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      margin: 0; line-height: 1.55; background: var(--bg); color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+    }
+    .shell {
+      max-width: 1120px; margin: 0 auto; padding: 2.2rem 1.5rem 3rem;
+      display: grid; grid-template-columns: 340px 1fr; gap: 1.75rem;
+      align-items: start; min-height: 100vh;
+    }
+
+    /* ---------- Sidebar ---------- */
+    .sidebar {
+      position: sticky; top: 2.2rem;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .brand {
+      padding: 1.5rem 1.5rem 1.4rem;
+      background: linear-gradient(135deg, #f48022 0%, #ff9d4d 100%);
+      color: #fff;
+    }
+    .brand .mark {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 42px; height: 42px; border-radius: 11px;
+      background: rgba(255, 255, 255, .18); font-size: 1.35rem; font-weight: 700;
+      backdrop-filter: blur(2px); margin-bottom: .85rem;
+    }
+    .brand h1 { font-size: 1.28rem; margin: 0; letter-spacing: -.01em; font-weight: 700; }
+    .brand p { margin: .35rem 0 0; font-size: .9rem; color: rgba(255, 255, 255, .92); }
+
+    .side-body { padding: 1.35rem 1.5rem 1.6rem; }
+    .side-label {
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .09em;
+      color: var(--muted); font-weight: 700; margin: 0 0 .7rem;
+    }
+    .ex-list { display: flex; flex-direction: column; gap: .55rem; margin-bottom: 1.5rem; }
+    .ex {
+      text-align: left; width: 100%; padding: .7rem .85rem; cursor: pointer;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      font-size: .875rem; color: var(--muted-strong); line-height: 1.4;
+      transition: border-color .15s, background .15s, color .15s, transform .05s;
+      font-family: inherit;
+    }
+    .ex:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--fg); }
+    .ex:active { transform: translateY(1px); }
+
+    .facts { display: flex; flex-direction: column; gap: .7rem; }
+    .fact { display: flex; gap: .6rem; font-size: .84rem; color: var(--muted-strong); }
+    .fact .dot {
+      flex: none; width: 8px; height: 8px; margin-top: .45rem; border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* ---------- Main ---------- */
+    .main { display: flex; flex-direction: column; gap: 1.25rem; }
+    .card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+    }
+    .ask { padding: 1.25rem 1.35rem; }
+    form { display: flex; gap: .6rem; }
+    .input-wrap { position: relative; flex: 1; }
+    .input-wrap svg {
+      position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+      width: 18px; height: 18px; color: var(--muted); pointer-events: none;
+    }
+    input {
+      width: 100%; padding: .82rem .9rem .82rem 2.5rem; border: 1px solid var(--border-strong);
+      border-radius: 10px; font-size: 1rem; background: #fff; color: var(--fg);
+      font-family: inherit; transition: border-color .15s, box-shadow .15s;
+    }
+    input::placeholder { color: #a8a29e; }
+    input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+    button.primary {
+      padding: .82rem 1.4rem; border: 0; border-radius: 10px; background: var(--accent);
+      color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; font-family: inherit;
+      transition: background .15s, box-shadow .15s, transform .05s;
+      box-shadow: 0 2px 8px rgba(244, 128, 34, .3);
+    }
+    button.primary:hover:not(:disabled) { background: var(--accent-hover); }
+    button.primary:active:not(:disabled) { transform: translateY(1px); }
+    button.primary:disabled { opacity: .65; cursor: default; box-shadow: none; }
+
+    /* ---------- Answer panel ---------- */
+    .panel { padding: 1.35rem 1.45rem 1.5rem; }
+    .panel-head {
+      display: flex; align-items: center; gap: .6rem; margin-bottom: 1rem;
+      padding-bottom: .9rem; border-bottom: 1px solid var(--border);
+    }
+    .panel-head h2 { font-size: .95rem; margin: 0; font-weight: 700; }
+    .badge {
+      margin-left: auto; font-size: .72rem; font-weight: 700; padding: .22rem .6rem;
+      border-radius: 999px; letter-spacing: .03em; display: none;
+    }
+    .badge.grounded { display: inline-block; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .badge.ungrounded { display: inline-block; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    #answer {
+      white-space: pre-wrap; font-size: 1.02rem; line-height: 1.7; color: var(--fg);
+      min-height: 1.5rem;
+    }
+    #answer.error { color: #b91c1c; }
+
+    .empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 2.5rem 1rem; color: var(--muted);
+    }
+    .empty svg { width: 40px; height: 40px; color: #d6d3d1; margin-bottom: .8rem; }
+    .empty p { margin: 0; font-size: .92rem; }
+
+    .citations { margin-top: 1.3rem; }
+    .citations-label {
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .09em;
+      color: var(--muted); font-weight: 700; margin: 0 0 .7rem;
+    }
+    .citation {
+      border: 1px solid var(--border); border-left: 3px solid var(--accent);
+      padding: .7rem .9rem; margin: .55rem 0; background: var(--accent-soft);
+      border-radius: 0 10px 10px 0;
+    }
+    .citation .meta {
+      font-weight: 600; font-size: .86rem; color: var(--muted-strong);
+      display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+    }
+    .citation .meta .doc { color: var(--fg); }
+    .citation .meta .score {
+      margin-left: auto; font-size: .74rem; font-weight: 700; color: var(--accent);
+      background: #fff; border: 1px solid var(--border); padding: .1rem .5rem; border-radius: 999px;
+    }
+    .citation .snippet { color: var(--muted-strong); font-size: .86rem; margin-top: .4rem; line-height: 1.55; }
+
+    /* ---------- Loading ---------- */
+    .thinking { display: flex; align-items: center; gap: .55rem; color: var(--muted); font-size: .95rem; }
+    .thinking .spinner {
+      width: 16px; height: 16px; border: 2px solid var(--accent-weak);
+      border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     .hidden { display: none; }
-    .citations { margin-top: 1rem; }
-    .citation { border-left: 3px solid var(--accent); padding: .5rem .8rem; margin: .5rem 0;
-                background: var(--accent-weak); border-radius: 0 6px 6px 0; }
-    .citation .meta { font-weight: 600; font-size: .9rem; }
-    .citation .snippet { color: var(--muted); font-size: .88rem; margin-top: .25rem; }
-    .error { color: #b91c1c; }
-    .examples { font-size: .88rem; color: var(--muted); }
-    .examples button { background: none; color: var(--accent); border: 0; padding: 0 .3rem;
-                       cursor: pointer; font-size: .88rem; text-decoration: underline; }
+
+    @media (max-width: 860px) {
+      .shell { grid-template-columns: 1fr; padding: 1.4rem 1rem 2.5rem; gap: 1.25rem; }
+      .sidebar { position: static; }
+      form { flex-direction: column; }
+      button.primary { width: 100%; }
+    }
   </style>
 </head>
 <body>
-  <h1>AgamiSoft Document Assistant</h1>
-  <p class="sub">Ask about HR, leave, sales, and company policies. Answers are grounded in the source documents with citations.</p>
+  <div class="shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark">A</div>
+        <h1>AgamiSoft Assistant</h1>
+        <p>Grounded answers over your company documents, always with citations.</p>
+      </div>
+      <div class="side-body">
+        <p class="side-label">Try asking</p>
+        <div class="ex-list">
+          <button type="button" class="ex">What are the standard working hours?</button>
+          <button type="button" class="ex">What discount can an Account Executive approve alone?</button>
+          <button type="button" class="ex">How much notice must I give to resign?</button>
+          <button type="button" class="ex">How many days of annual leave do I get?</button>
+        </div>
+        <p class="side-label">How it works</p>
+        <div class="facts">
+          <div class="fact"><span class="dot"></span><span>Answers are drawn only from the source PDFs, never invented.</span></div>
+          <div class="fact"><span class="dot"></span><span>Every response links back to the document and page it came from.</span></div>
+          <div class="fact"><span class="dot"></span><span>If the documents do not cover it, the assistant says so plainly.</span></div>
+        </div>
+      </div>
+    </aside>
 
-  <form id="ask-form">
-    <input id="question" name="question" type="text" autocomplete="off"
-           placeholder="e.g. How many days of annual leave do I get?" required />
-    <button id="submit" type="submit">Ask</button>
-  </form>
+    <!-- Main -->
+    <main class="main">
+      <div class="card ask">
+        <form id="ask-form">
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path>
+            </svg>
+            <input id="question" name="question" type="text" autocomplete="off"
+                   placeholder="Ask about HR, leave, sales, or company policy..." required />
+          </div>
+          <button id="submit" class="primary" type="submit">Ask</button>
+        </form>
+      </div>
 
-  <p class="examples">Try:
-    <button type="button" class="ex">What are the standard working hours?</button>
-    <button type="button" class="ex">What discount can an Account Executive approve alone?</button>
-    <button type="button" class="ex">How much notice must I give to resign?</button>
-  </p>
+      <div class="card panel">
+        <div class="panel-head">
+          <h2>Answer</h2>
+          <span id="badge" class="badge"></span>
+        </div>
 
-  <div id="result" class="hidden">
-    <div id="answer"></div>
-    <div id="citations" class="citations"></div>
+        <div id="empty" class="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <path d="M14 2v6h6"></path><path d="M9 13h6"></path><path d="M9 17h4"></path>
+          </svg>
+          <p>Ask a question to see a grounded, cited answer here.</p>
+        </div>
+
+        <div id="result" class="hidden">
+          <div id="answer"></div>
+          <div id="citations" class="citations"></div>
+        </div>
+      </div>
+    </main>
   </div>
 
   <script>
@@ -70,12 +244,19 @@
     const input = document.getElementById("question");
     const submit = document.getElementById("submit");
     const result = document.getElementById("result");
+    const empty = document.getElementById("empty");
     const answerEl = document.getElementById("answer");
     const citationsEl = document.getElementById("citations");
+    const badge = document.getElementById("badge");
 
     document.querySelectorAll(".ex").forEach(function (b) {
       b.addEventListener("click", function () { input.value = b.textContent; input.focus(); });
     });
+
+    function showResult() {
+      empty.classList.add("hidden");
+      result.classList.remove("hidden");
+    }
 
     form.addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -84,9 +265,11 @@
 
       submit.disabled = true;
       submit.textContent = "Thinking...";
-      result.classList.remove("hidden");
+      showResult();
+      badge.className = "badge";
+      badge.textContent = "";
       answerEl.className = "";
-      answerEl.textContent = "";
+      answerEl.innerHTML = '<div class="thinking"><span class="spinner"></span>Searching the documents...</div>';
       citationsEl.innerHTML = "";
 
       try {
@@ -101,14 +284,32 @@
           answerEl.textContent = data.detail || "Something went wrong.";
           return;
         }
+        answerEl.className = "";
         answerEl.textContent = data.answer;
-        (data.citations || []).forEach(function (c) {
+
+        if (data.grounded) {
+          badge.className = "badge grounded";
+          badge.textContent = "Grounded";
+        } else {
+          badge.className = "badge ungrounded";
+          badge.textContent = "Not in documents";
+        }
+
+        (data.citations || []).forEach(function (c, i) {
+          if (i === 0) {
+            const label = document.createElement("p");
+            label.className = "citations-label";
+            label.textContent = "Sources";
+            citationsEl.appendChild(label);
+          }
           const div = document.createElement("div");
           div.className = "citation";
           div.innerHTML =
-            '<div class="meta">' + c.document + " &middot; page " + c.page +
-            " &middot; score " + c.score.toFixed(2) + "</div>" +
+            '<div class="meta"><span class="doc"></span>' +
+            '<span>page ' + c.page + '</span>' +
+            '<span class="score">' + c.score.toFixed(2) + '</span></div>' +
             '<div class="snippet"></div>';
+          div.querySelector(".doc").textContent = c.document;
           div.querySelector(".snippet").textContent = c.snippet;
           citationsEl.appendChild(div);
         });
