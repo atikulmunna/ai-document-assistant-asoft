@@ -2,8 +2,6 @@
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Open_App-f48022?style=for-the-badge&logo=amazonaws&logoColor=white)](https://udt934xmby.us-east-1.awsapprunner.com)
 
-**Live app:** https://udt934xmby.us-east-1.awsapprunner.com
-
 An internal question-answering assistant for AgamiSoft Ltd. Employees ask
 everyday questions in plain English ("How many days of annual leave do I get?",
 "What discount can I approve on my own?") and get a short, accurate answer that
