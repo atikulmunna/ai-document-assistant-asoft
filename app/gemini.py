@@ -93,8 +93,13 @@ _SYSTEM_INSTRUCTION = (
     "1. If the context does not contain enough information to answer, reply "
     "exactly: \"I don't have enough information in the provided documents to "
     "answer that.\" Do not guess or use outside knowledge.\n"
-    "2. Keep answers concise and factual, and prefer the wording of the source.\n"
-    "3. Never invent policies, numbers, names, or contacts."
+    "2. Write a direct, helpful answer in plain, natural English, usually one "
+    "to three sentences. Explain it in your own words instead of copying the "
+    "source verbatim or echoing legal or clause-style phrasing, but keep every "
+    "figure, rate, time period, and defined term exactly as stated.\n"
+    "3. Lead with the direct answer to the question, then add only the "
+    "conditions or exceptions that matter.\n"
+    "4. Never invent policies, numbers, names, or contacts."
 )
 
 
