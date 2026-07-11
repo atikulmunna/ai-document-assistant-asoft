@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AgamiSoft Document Assistant</title>
+  <title>Partex Star Group HR & Onboarding Assistant</title>
   <style>
     :root {
       color-scheme: light;
@@ -138,10 +138,21 @@
     .empty p { margin: 0; font-size: .92rem; }
 
     .citations { margin-top: 1.3rem; }
-    .citations-label {
-      font-size: .72rem; text-transform: uppercase; letter-spacing: .09em;
-      color: var(--muted); font-weight: 700; margin: 0 0 .7rem;
+    .sources > summary {
+      cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: .5rem;
+      font-size: .8rem; font-weight: 700; color: var(--accent);
+      padding: .4rem .75rem; border: 1px solid var(--border); border-radius: 999px;
+      user-select: none; transition: background .15s, border-color .15s;
     }
+    .sources > summary:hover { background: var(--accent-soft); border-color: var(--accent); }
+    .sources > summary::-webkit-details-marker { display: none; }
+    .sources > summary::before { content: "\25B8"; font-size: .7rem; transition: transform .15s; }
+    .sources[open] > summary::before { transform: rotate(90deg); }
+    .sources > summary .count {
+      background: var(--accent); color: #fff; border-radius: 999px;
+      font-size: .7rem; padding: 0 .45rem; min-width: 1.3em; text-align: center;
+    }
+    .sources[open] > summary { margin-bottom: .3rem; }
     .citation {
       border: 1px solid var(--border); border-left: 3px solid var(--accent);
       padding: .7rem .9rem; margin: .55rem 0; background: var(--accent-soft);
@@ -181,23 +192,23 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="brand">
-        <div class="mark">A</div>
-        <h1>AgamiSoft Assistant</h1>
-        <p>Grounded answers over your company documents, always with citations.</p>
+        <div class="mark">P</div>
+        <h1>Partex Star Group</h1>
+        <p>Onboarding, HR policy, and Bangladesh Labour Act answers, always with citations.</p>
       </div>
       <div class="side-body">
         <p class="side-label">Try asking</p>
         <div class="ex-list">
-          <button type="button" class="ex">What are the standard working hours?</button>
-          <button type="button" class="ex">What discount can an Account Executive approve alone?</button>
-          <button type="button" class="ex">How much notice must I give to resign?</button>
-          <button type="button" class="ex">How many days of annual leave do I get?</button>
+          <button type="button" class="ex">What are the working days and hours at Partex Star Group?</button>
+          <button type="button" class="ex">How many days of annual, sick, and casual leave do employees get?</button>
+          <button type="button" class="ex">What is the probation period for a clerical worker under the Labour Act?</button>
+          <button type="button" class="ex">What is the maximum daily and weekly working hours for an adult worker?</button>
         </div>
-        <p class="side-label">How it works</p>
+        <p class="side-label">Sources</p>
         <div class="facts">
-          <div class="fact"><span class="dot"></span><span>Answers are drawn only from the source PDFs, never invented.</span></div>
-          <div class="fact"><span class="dot"></span><span>Every response links back to the document and page it came from.</span></div>
-          <div class="fact"><span class="dot"></span><span>If the documents do not cover it, the assistant says so plainly.</span></div>
+          <div class="fact"><span class="dot"></span><span>Partex Star Group Employee Handbook (onboarding, HR policies, code of conduct).</span></div>
+          <div class="fact"><span class="dot"></span><span>Bangladesh Labour Act 2006: Conditions of Service (Ch. 2) and Working Hours &amp; Leave (Ch. 9).</span></div>
+          <div class="fact"><span class="dot"></span><span>Answers cite the document and page, and the assistant refuses when the sources do not cover a question.</span></div>
         </div>
       </div>
     </aside>
@@ -211,7 +222,7 @@
               <circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path>
             </svg>
             <input id="question" name="question" type="text" autocomplete="off"
-                   placeholder="Ask about HR, leave, sales, or company policy..." required />
+                   placeholder="Ask about onboarding, HR policy, or Bangladesh Labour Law..." required />
           </div>
           <button id="submit" class="primary" type="submit">Ask</button>
         </form>
@@ -295,24 +306,27 @@
           badge.textContent = "Not in documents";
         }
 
-        (data.citations || []).forEach(function (c, i) {
-          if (i === 0) {
-            const label = document.createElement("p");
-            label.className = "citations-label";
-            label.textContent = "Sources";
-            citationsEl.appendChild(label);
-          }
-          const div = document.createElement("div");
-          div.className = "citation";
-          div.innerHTML =
-            '<div class="meta"><span class="doc"></span>' +
-            '<span>page ' + c.page + '</span>' +
-            '<span class="score">' + c.score.toFixed(2) + '</span></div>' +
-            '<div class="snippet"></div>';
-          div.querySelector(".doc").textContent = c.document;
-          div.querySelector(".snippet").textContent = c.snippet;
-          citationsEl.appendChild(div);
-        });
+        const cites = data.citations || [];
+        if (cites.length) {
+          const details = document.createElement("details");
+          details.className = "sources";  // collapsed by default
+          const summary = document.createElement("summary");
+          summary.innerHTML = 'Sources <span class="count">' + cites.length + '</span>';
+          details.appendChild(summary);
+          cites.forEach(function (c) {
+            const div = document.createElement("div");
+            div.className = "citation";
+            div.innerHTML =
+              '<div class="meta"><span class="doc"></span>' +
+              '<span>page ' + c.page + '</span>' +
+              '<span class="score">' + c.score.toFixed(2) + '</span></div>' +
+              '<div class="snippet"></div>';
+            div.querySelector(".doc").textContent = c.document;
+            div.querySelector(".snippet").textContent = c.snippet;
+            details.appendChild(div);
+          });
+          citationsEl.appendChild(details);
+        }
       } catch (err) {
         answerEl.className = "error";
         answerEl.textContent = "Network error. Please try again.";
