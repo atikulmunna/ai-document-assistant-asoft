@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from app import gemini
 from app.config import Settings
@@ -27,8 +26,8 @@ def _settings(min_similarity: float = 0.55, top_k: int = 3) -> Settings:
 def _store() -> VectorStore:
     embeddings = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
     chunks = [
-        Chunk(0, "HR Policy.pdf", 1, "Standard working hours are 9:00 AM to 6:00 PM."),
-        Chunk(1, "Leave Policy.pdf", 1, "Annual leave is 20 days per year."),
+        Chunk(0, "Partex-Star-Group.pdf", 4, "Standard working hours are 9:00 AM to 5:00 PM."),
+        Chunk(1, "A Handbook on the Bangladesh Labour Act 2006.pdf", 56, "Eight hours a day."),
     ]
     return VectorStore(embeddings, chunks)
 
@@ -43,8 +42,8 @@ def test_grounded_answer_returns_citations(monkeypatch):
     assert resp.grounded is True
     assert resp.answer == "Hours are 9 AM to 6 PM."
     assert len(resp.citations) >= 1
-    assert resp.citations[0].document == "HR Policy.pdf"
-    assert resp.citations[0].page == 1
+    assert resp.citations[0].document == "Partex-Star-Group.pdf"
+    assert resp.citations[0].page == 4
 
 
 def test_below_threshold_refuses_without_calling_llm(monkeypatch):

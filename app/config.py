@@ -19,6 +19,9 @@ DOCS_DIR = BASE_DIR / "sample_docs"
 INDEX_DIR = BASE_DIR / "data" / "index"
 EMBEDDINGS_PATH = INDEX_DIR / "embeddings.npy"
 CHUNKS_PATH = INDEX_DIR / "chunks.json"
+# OCR sidecar for scanned PDFs that have no extractable text layer (produced
+# once by scripts/ocr_labour_act.py and merged into the corpus at build time).
+OCR_PATH = BASE_DIR / "data" / "ocr" / "labour_act.json"
 
 
 def _int_env(name: str, default: int) -> int:

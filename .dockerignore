@@ -1,3 +1,7 @@
+# Source PDFs and the index-build scripts are only needed to build the index,
+# never to serve it, so they stay out of the runtime image.
+sample_docs
+scripts
 .git
 .gitignore
 .venv

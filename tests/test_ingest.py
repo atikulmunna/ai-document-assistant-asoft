@@ -1,15 +1,18 @@
 """Tests for PDF-agnostic chunking logic in app.ingest."""
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from app.ingest import (
-    CHUNK_OVERLAP_CHARS,
     MAX_CHUNK_CHARS,
     Chunk,
     _normalize,
     _split_page,
     build_chunks,
+    chunk_records,
+    iter_ocr_pages,
 )
 
 
@@ -57,12 +60,43 @@ def test_build_chunks_on_real_corpus_has_page_metadata():
     assert all(c.text.strip() for c in chunks)
     # IDs are contiguous and unique.
     assert [c.id for c in chunks] == list(range(len(chunks)))
-    # Every source document is represented.
+    # The text-bearing handbook is represented (the scanned Labour Act PDF has
+    # no text layer, so it enters the corpus via OCR, not build_chunks).
     documents = {c.document for c in chunks}
-    assert "HR Policy.pdf" in documents
-    assert "FAQ.pdf" in documents
+    assert "Partex-Star-Group.pdf" in documents
 
 
 def test_build_chunks_missing_dir_raises(tmp_path):
     with pytest.raises(FileNotFoundError):
         build_chunks(tmp_path)
+
+
+def test_chunk_records_numbers_ids_contiguously_across_sources():
+    records = [
+        ("Partex-Star-Group.pdf", 4, "Annual leave is thirty days."),
+        ("A Handbook on the Bangladesh Labour Act 2006.pdf", 56, "Eight hours a day."),
+    ]
+    chunks = chunk_records(records)
+    assert [c.id for c in chunks] == list(range(len(chunks)))
+    docs = {(c.document, c.page) for c in chunks}
+    assert ("Partex-Star-Group.pdf", 4) in docs
+    assert ("A Handbook on the Bangladesh Labour Act 2006.pdf", 56) in docs
+
+
+def test_iter_ocr_pages_reads_sidecar_and_skips_empty(tmp_path):
+    ocr_file = tmp_path / "labour_act.json"
+    ocr_file.write_text(json.dumps({
+        "document": "A Handbook on the Bangladesh Labour Act 2006.pdf",
+        "pages": [
+            {"page": 25, "text": "CHAPTER II Conditions of Service."},
+            {"page": 26, "text": "   "},  # blank pages are dropped
+        ],
+    }), encoding="utf-8")
+
+    records = list(iter_ocr_pages(ocr_file))
+    assert records == [("A Handbook on the Bangladesh Labour Act 2006.pdf", 25,
+                        "CHAPTER II Conditions of Service.")]
+
+
+def test_iter_ocr_pages_missing_file_yields_nothing(tmp_path):
+    assert list(iter_ocr_pages(tmp_path / "does_not_exist.json")) == []

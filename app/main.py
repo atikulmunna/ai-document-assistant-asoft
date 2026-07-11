@@ -50,9 +50,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AgamiSoft AI Document Assistant",
-    description="Ask natural-language questions grounded in the AgamiSoft document corpus.",
-    version="1.0.0",
+    title="Enterprise AI Assistant for Partex-Star-Group Employee Onboarding & HR Policies",
+    description="Ask natural-language questions grounded in the Partex Star Group "
+                "employee handbook and the Bangladesh Labour Act 2006.",
+    version="2.0.0",
     lifespan=lifespan,
 )
 

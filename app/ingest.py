@@ -5,11 +5,16 @@ that answers can cite exactly where the information came from.
 """
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Iterable, Iterator
 
 from pypdf import PdfReader
+
+# A single page record shared by every source: (document, page, text).
+PageRecord = tuple[str, int, str]
 
 # Chunk sizing (characters). The corpus is tiny and prose-heavy, so modest
 # chunks with a little overlap keep each section retrievable on its own.
@@ -65,8 +70,12 @@ def _split_page(text: str) -> list[str]:
     return chunks
 
 
-def iter_pages(docs_dir: Path):
-    """Yield (document_name, page_number, page_text) for every PDF page."""
+def iter_pages(docs_dir: Path) -> Iterator[PageRecord]:
+    """Yield (document_name, page_number, page_text) for every PDF page.
+
+    Scanned PDFs with no text layer yield nothing here; their text is recovered
+    separately via OCR (see iter_ocr_pages).
+    """
     pdf_paths = sorted(Path(docs_dir).glob("*.pdf"))
     if not pdf_paths:
         raise FileNotFoundError(f"No PDF files found in {docs_dir}")
@@ -78,12 +87,36 @@ def iter_pages(docs_dir: Path):
                 yield path.name, page_number, text
 
 
-def build_chunks(docs_dir: Path) -> list[Chunk]:
-    """Parse every PDF in docs_dir into an ordered list of chunks."""
+def iter_ocr_pages(ocr_path: Path) -> Iterator[PageRecord]:
+    """Yield page records from an OCR sidecar JSON, or nothing if it is absent.
+
+    The file shape is {"document": "<name>.pdf", "pages": [{"page": N,
+    "text": "..."}]}. Page numbers are the handbook's printed page numbers so
+    citations match the physical document.
+    """
+    ocr_path = Path(ocr_path)
+    if not ocr_path.exists():
+        return
+    data = json.loads(ocr_path.read_text(encoding="utf-8"))
+    document = data["document"]
+    for entry in data["pages"]:
+        text = _normalize(entry.get("text", ""))
+        if text:
+            yield document, int(entry["page"]), text
+
+
+def chunk_records(records: Iterable[PageRecord]) -> list[Chunk]:
+    """Split page records into contiguous, id-numbered chunks."""
     chunks: list[Chunk] = []
-    for document, page, text in iter_pages(docs_dir):
+    for document, page, text in records:
         for piece in _split_page(text):
             chunks.append(Chunk(id=len(chunks), document=document, page=page, text=piece))
+    return chunks
+
+
+def build_chunks(docs_dir: Path) -> list[Chunk]:
+    """Parse every text-bearing PDF in docs_dir into an ordered list of chunks."""
+    chunks = chunk_records(iter_pages(docs_dir))
     if not chunks:
         raise ValueError(f"No extractable text found in PDFs under {docs_dir}")
     return chunks

@@ -86,8 +86,10 @@ def embed_query(question: str) -> np.ndarray:
 
 
 _SYSTEM_INSTRUCTION = (
-    "You are AgamiSoft's internal document assistant. Answer strictly and only "
-    "from the numbered context passages provided. Follow these rules:\n"
+    "You are the Partex Star Group employee assistant. You help employees "
+    "understand onboarding procedures, HR policies, and the applicable "
+    "Bangladesh Labour Act 2006. Answer strictly and only from the numbered "
+    "context passages provided. Follow these rules:\n"
     "1. If the context does not contain enough information to answer, reply "
     "exactly: \"I don't have enough information in the provided documents to "
     "answer that.\" Do not guess or use outside knowledge.\n"
@@ -119,6 +121,47 @@ def _generate_gemini(prompt: str) -> str:
         ),
     )
     return (response.text or "").strip()
+
+
+_OCR_INSTRUCTION = (
+    "You are an OCR engine. Transcribe every piece of text visible on this "
+    "scanned page of a legal handbook exactly as written, preserving the "
+    "reading order, section numbers, and list markers (a), (b), (1), (2). "
+    "Do not summarise, translate, explain, or add anything of your own. Ignore "
+    "scanning artefacts such as black smudges. If a word is truly illegible, "
+    "write [illegible]. Output only the transcribed text."
+)
+
+
+def ocr_image(image_bytes: bytes, mime_type: str = "image/jpeg") -> str:
+    """Transcribe a page image to plain text using Gemini's vision model.
+
+    Used only at build time to recover text from the scanned Labour Act
+    handbook, which has no embedded text layer.
+    """
+    try:
+        response = _get_client().models.generate_content(
+            model=settings.generation_model,
+            contents=[
+                types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+                _OCR_INSTRUCTION,
+            ],
+            config=types.GenerateContentConfig(
+                temperature=0.0,
+                max_output_tokens=4096,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
+            ),
+        )
+    except Exception as exc:
+        raise GeminiError(f"OCR request failed: {exc}") from exc
+
+    text = (response.text or "").strip()
+    if not text:
+        # Gemini blocks verbatim reproduction of known copyrighted text (legal
+        # acts commonly trip this), returning an empty body with a finish reason.
+        reason = response.candidates[0].finish_reason if response.candidates else None
+        raise GeminiError(f"OCR returned no text (finish_reason={reason}).")
+    return text
 
 
 def _get_groq_client():
