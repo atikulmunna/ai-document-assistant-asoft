@@ -7,11 +7,11 @@
   <style>
     :root {
       color-scheme: light;
-      --accent: #f48022;
-      --accent-hover: #d96d15;
-      --accent-soft: #fff4ec;
-      --accent-weak: rgba(244, 128, 34, .10);
-      --accent-ring: rgba(244, 128, 34, .28);
+      --accent: #c62933;
+      --accent-hover: #a81f28;
+      --accent-soft: #fdf1f1;
+      --accent-weak: rgba(198, 41, 51, .09);
+      --accent-ring: rgba(198, 41, 51, .25);
       --border: #e7e5e4;
       --border-strong: #d6d3d1;
       --muted: #78716c;
@@ -44,18 +44,16 @@
       overflow: hidden;
     }
     .brand {
-      padding: 1.5rem 1.5rem 1.4rem;
-      background: linear-gradient(135deg, #f48022 0%, #ff9d4d 100%);
+      padding: 1.6rem 1.5rem 1.5rem;
+      background: linear-gradient(135deg, #c62933 0%, #9e1f27 100%);
       color: #fff;
     }
-    .brand .mark {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 42px; height: 42px; border-radius: 11px;
-      background: rgba(255, 255, 255, .18); font-size: 1.35rem; font-weight: 700;
-      backdrop-filter: blur(2px); margin-bottom: .85rem;
+    .brand .logo { display: block; height: 46px; width: auto; margin-bottom: 1rem; }
+    .brand h1 { font-size: 1.24rem; margin: 0; letter-spacing: -.01em; font-weight: 700; }
+    .brand p {
+      margin: .3rem 0 0; font-size: .82rem; font-weight: 500;
+      text-transform: uppercase; letter-spacing: .06em; color: rgba(255, 255, 255, .82);
     }
-    .brand h1 { font-size: 1.28rem; margin: 0; letter-spacing: -.01em; font-weight: 700; }
-    .brand p { margin: .35rem 0 0; font-size: .9rem; color: rgba(255, 255, 255, .92); }
 
     .side-body { padding: 1.35rem 1.5rem 1.6rem; }
     .side-label {
@@ -104,7 +102,7 @@
       padding: .82rem 1.4rem; border: 0; border-radius: 10px; background: var(--accent);
       color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; font-family: inherit;
       transition: background .15s, box-shadow .15s, transform .05s;
-      box-shadow: 0 2px 8px rgba(244, 128, 34, .3);
+      box-shadow: 0 2px 8px rgba(198, 41, 51, .28);
     }
     button.primary:hover:not(:disabled) { background: var(--accent-hover); }
     button.primary:active:not(:disabled) { transform: translateY(1px); }
@@ -192,9 +190,9 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="brand">
-        <div class="mark">P</div>
+        <img class="logo" src="/static/icon.png" alt="Partex Star Group" />
         <h1>Partex Star Group</h1>
-        <p>Onboarding, HR policy, and Bangladesh Labour Act answers, always with citations.</p>
+        <p>Employee Assistant</p>
       </div>
       <div class="side-body">
         <p class="side-label">Try asking</p>
@@ -204,11 +202,10 @@
           <button type="button" class="ex">What is the probation period for a clerical worker under the Labour Act?</button>
           <button type="button" class="ex">What is the maximum daily and weekly working hours for an adult worker?</button>
         </div>
-        <p class="side-label">Sources</p>
+        <p class="side-label">Knowledge base</p>
         <div class="facts">
-          <div class="fact"><span class="dot"></span><span>Partex Star Group Employee Handbook (onboarding, HR policies, code of conduct).</span></div>
-          <div class="fact"><span class="dot"></span><span>Bangladesh Labour Act 2006: Conditions of Service (Ch. 2) and Working Hours &amp; Leave (Ch. 9).</span></div>
-          <div class="fact"><span class="dot"></span><span>Answers cite the document and page, and the assistant refuses when the sources do not cover a question.</span></div>
+          <div class="fact"><span class="dot"></span><span>Employee Handbook</span></div>
+          <div class="fact"><span class="dot"></span><span>Bangladesh Labour Act 2006 (Ch. 2 &amp; 9)</span></div>
         </div>
       </div>
     </aside>
